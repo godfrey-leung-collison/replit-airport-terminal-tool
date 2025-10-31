@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { MapContainer } from "./components/MapContainer";
-import { AirportSidebar } from "./components/AirportSidebar";
-import { DrawingToolsPanel } from "./components/DrawingToolsPanel";
-import { ExportPanel } from "./components/ExportPanel";
-import { CustomPoiModal } from "./components/CustomPoiModal";
-import { PolygonModal } from "./components/PolygonModal";
+import { MapContainer } from "@/pages/components/MapContainer";
+import { AirportSidebar } from "@/pages/components/AirportSidebar";
+import { DrawingToolsPanel } from "@/pages/components/DrawingToolsPanel";
+import { ExportPanel } from "@/pages/components/ExportPanel";
+import { CustomPoiModal } from "@/pages/components/CustomPoiModal";
+import { PolygonModal } from "@/pages/components/PolygonModal";
 import type { Airport, CustomPoi, DrawnPolygon } from "@shared/schema";
 
 export default function MapPage() {
@@ -136,8 +136,8 @@ export default function MapPage() {
         selectedAirport={selectedAirport}
         onSelectAirport={setSelectedAirport}
         poiFilters={poiFilters}
-        onToggleFilter={(key) =>
-          setPoiFilters({ ...poiFilters, [key]: !poiFilters[key] })
+        onToggleFilter={(key: string) =>
+          setPoiFilters({ ...poiFilters, [key]: !poiFilters[key as keyof typeof poiFilters] })
         }
         customPoisCount={customPois.length}
         polygonsCount={drawnPolygons.length}

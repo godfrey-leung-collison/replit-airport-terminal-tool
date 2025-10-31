@@ -146,6 +146,8 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const poi: CustomPoi = {
       ...insertPoi,
+      description: insertPoi.description ?? null,
+      icon: insertPoi.icon ?? null,
       id,
       createdAt: new Date(),
     };
@@ -167,6 +169,8 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const polygon: DrawnPolygon = {
       ...insertPolygon,
+      notes: insertPolygon.notes ?? null,
+      area: insertPolygon.area ?? null,
       id,
       createdAt: new Date(),
     };

@@ -24,7 +24,14 @@ export function ExportPanel({
   const [includePolygons, setIncludePolygons] = useState(true);
 
   const handleExport = () => {
-    const features = [];
+    const features: Array<{
+      type: "Feature";
+      properties: Record<string, any>;
+      geometry: {
+        type: "Point" | "Polygon";
+        coordinates: any;
+      };
+    }> = [];
 
     if (includePois) {
       customPois.forEach((poi) => {
