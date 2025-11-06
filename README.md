@@ -34,6 +34,8 @@ IV) Start the Development Server
 
 ```npm run dev```
 
+>>!Note NODE_TLS_REJECT_UNAUTHORIZED=0
+
 This single command starts both:
 
 Backend: Express server on port 5000
