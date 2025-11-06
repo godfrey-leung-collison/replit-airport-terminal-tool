@@ -14,6 +14,7 @@ import type { Airport, CustomPoi, DrawnPolygon } from "@shared/schema";
 export default function MapPage() {
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(360);
   const [activeDrawingTool, setActiveDrawingTool] = useState<
     null | "marker" | "polygon" | "edit" | "delete"
   >(null);
@@ -153,6 +154,8 @@ export default function MapPage() {
       <AirportSidebar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        width={sidebarWidth}
+        onWidthChange={setSidebarWidth}
         selectedAirport={selectedAirport}
         onSelectAirport={setSelectedAirport}
         poiFilters={poiFilters}
@@ -171,7 +174,7 @@ export default function MapPage() {
       <div
         className="absolute inset-0 z-0"
         style={{
-          marginLeft: sidebarCollapsed ? "48px" : "360px",
+          marginLeft: sidebarCollapsed ? "48px" : `${sidebarWidth}px`,
           transition: "margin-left 200ms ease-in-out",
         }}
       >

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { ChevronLeft, ChevronRight, Search, MapPin, Coffee, Utensils, Shield, Plane, Layers, FileJson, Copy, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,8 @@ import type { Airport, CustomPoi, DrawnPolygon } from "@shared/schema";
 interface AirportSidebarProps {
   collapsed: boolean;
   onToggleCollapse: () => void;
+  width: number;
+  onWidthChange: (width: number) => void;
   selectedAirport: Airport | null;
   onSelectAirport: (airport: Airport) => void;
   poiFilters: Record<string, boolean>;
@@ -30,6 +32,8 @@ interface AirportSidebarProps {
 export function AirportSidebar({
   collapsed,
   onToggleCollapse,
+  width,
+  onWidthChange,
   selectedAirport,
   onSelectAirport,
   poiFilters,
@@ -43,7 +47,11 @@ export function AirportSidebar({
   onSelectFeature,
 }: AirportSidebarProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [isResizing, setIsResizing] = useState(false);
   const { toast } = useToast();
+
+  const MIN_WIDTH = 300;
+  const MAX_WIDTH = 600;
 
   const { data: airports = [], isLoading } = useQuery<Airport[]>({
     queryKey: ["/api/airports"],
@@ -104,6 +112,44 @@ export function AirportSidebar({
     });
   };
 
+  const handleMouseDown = (e: React.MouseEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!isResizing) return;
+
+      const newWidth = e.clientX;
+      if (newWidth >= MIN_WIDTH && newWidth <= MAX_WIDTH) {
+        onWidthChange(newWidth);
+      } else if (newWidth < MIN_WIDTH) {
+        onWidthChange(MIN_WIDTH);
+      } else if (newWidth > MAX_WIDTH) {
+        onWidthChange(MAX_WIDTH);
+      }
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+    };
+
+    if (isResizing) {
+      document.addEventListener("mousemove", handleMouseMove);
+      document.addEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "col-resize";
+      document.body.style.userSelect = "none";
+    }
+
+    return () => {
+      document.removeEventListener("mousemove", handleMouseMove);
+      document.removeEventListener("mouseup", handleMouseUp);
+      document.body.style.cursor = "";
+      document.body.style.userSelect = "";
+    };
+  }, [isResizing, onWidthChange]);
+
   if (collapsed) {
     return (
       <div className="fixed left-0 top-0 bottom-0 w-12 bg-sidebar border-r border-sidebar-border z-[1000] flex flex-col items-center py-4">
@@ -125,7 +171,10 @@ export function AirportSidebar({
   }
 
   return (
-    <div className="fixed left-0 top-0 bottom-0 w-[360px] bg-sidebar border-r border-sidebar-border z-[1000] flex flex-col">
+    <div 
+      className="fixed left-0 top-0 bottom-0 bg-sidebar border-r border-sidebar-border z-[1000] flex flex-col"
+      style={{ width: `${width}px` }}
+    >
       <div className="p-4 border-b border-sidebar-border flex items-center justify-between">
         <div>
           <h1 className="text-lg font-semibold text-sidebar-foreground">Airport POI Mapper</h1>
@@ -426,6 +475,14 @@ export function AirportSidebar({
           )}
         </div>
       </ScrollArea>
+      
+      {/* Resize handle */}
+      <div
+        className="absolute top-0 right-0 bottom-0 w-1 cursor-col-resize hover:bg-primary/50 transition-colors group"
+        onMouseDown={handleMouseDown}
+      >
+        <div className="absolute top-1/2 right-0 -translate-y-1/2 w-1 h-12 bg-primary/30 group-hover:bg-primary/70 transition-colors rounded-l" />
+      </div>
     </div>
   );
 }
