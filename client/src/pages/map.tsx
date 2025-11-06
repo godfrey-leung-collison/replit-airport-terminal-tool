@@ -4,9 +4,11 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { MapContainer } from "@/pages/components/MapContainer";
 import { AirportSidebar } from "@/pages/components/AirportSidebar";
 import { DrawingToolsPanel } from "@/pages/components/DrawingToolsPanel";
-import { ExportPanel } from "@/pages/components/ExportPanel";
+// import { ExportPanel } from "@/pages/components/ExportPanel";
 import { CustomPoiModal } from "@/pages/components/CustomPoiModal";
 import { PolygonModal } from "@/pages/components/PolygonModal";
+import { GeoJsonViewerPanel } from "@/pages/components/GeoJsonViewerPanel";
+import { QuickExportButton } from "@/pages/components/QuickExportButton";
 import type { Airport, CustomPoi, DrawnPolygon } from "@shared/schema";
 
 export default function MapPage() {
@@ -168,11 +170,22 @@ export default function MapPage() {
         onClearAll={handleClearAll}
       />
 
-      <ExportPanel
+      {/* <ExportPanel
+        customPois={customPois}
+        drawnPolygons={drawnPolygons}
+        selectedAirport={selectedAirport}
+      /> */}
+
+      <QuickExportButton
         customPois={customPois}
         drawnPolygons={drawnPolygons}
         selectedAirport={selectedAirport}
       />
+
+      {/* <GeoJsonViewerPanel
+        customPois={customPois}
+        drawnPolygons={drawnPolygons}
+      /> */}
 
       {showCustomPoiModal && tempMarkerPosition && (
         <CustomPoiModal
