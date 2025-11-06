@@ -10,6 +10,41 @@ This application allows users to:
 - Add custom POI markers and draw polygon areas to define terminal zones
 - Export all data as GeoJSON for external use
 
+## How to run the app locally
+
+Here's how you can run and test this airport POI mapping app locally on your machine:
+
+I) Prerequisites
+
+How to install npm and Node.js to your machine, see https://nodejs.org/en/download/
+
+- Node.js (v18 or v20 recommended)
+- npm package manager
+
+II) Clone or Download the Project
+Download all the project files to a local directory on your computer.
+
+III) Install Dependencies
+
+Open terminal console and run the following command to intall the required packages
+
+```npm install```
+
+IV) Start the Development Server
+
+```npm run dev```
+
+This single command starts both:
+
+Backend: Express server on port 5000
+Frontend: Vite development server (served through the same port)
+
+V) Access the Application
+Open your browser and navigate to:
+
+http://localhost:5000
+
+
 ## Architecture
 
 ### Frontend
