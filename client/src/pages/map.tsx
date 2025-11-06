@@ -31,6 +31,10 @@ export default function MapPage() {
   const [showPolygonModal, setShowPolygonModal] = useState(false);
   const [tempMarkerPosition, setTempMarkerPosition] = useState<[number, number] | null>(null);
   const [tempPolygonCoords, setTempPolygonCoords] = useState<[number, number][] | null>(null);
+  
+  // Feature selection for GeoJSON viewer
+  const [selectedCustomPoi, setSelectedCustomPoi] = useState<CustomPoi | null>(null);
+  const [selectedPolygon, setSelectedPolygon] = useState<DrawnPolygon | null>(null);
 
   const { data: customPois = [] } = useQuery<CustomPoi[]>({
     queryKey: selectedAirport ? [`/api/custom-pois/${selectedAirport.id}`] : [],
@@ -127,6 +131,20 @@ export default function MapPage() {
         if (polygon.id) deletePolygonMutation.mutate(polygon.id);
       }
       setActiveDrawingTool(null);
+      setSelectedCustomPoi(null);
+      setSelectedPolygon(null);
+    }
+  };
+
+  const handleFeatureSelected = (type: "poi" | "polygon", id: string) => {
+    if (type === "poi") {
+      const poi = customPois.find(p => p.id === id);
+      setSelectedCustomPoi(poi || null);
+      setSelectedPolygon(null);
+    } else {
+      const polygon = drawnPolygons.find(p => p.id === id);
+      setSelectedPolygon(polygon || null);
+      setSelectedCustomPoi(null);
     }
   };
 
@@ -143,6 +161,11 @@ export default function MapPage() {
         }
         customPoisCount={customPois.length}
         polygonsCount={drawnPolygons.length}
+        customPois={customPois}
+        drawnPolygons={drawnPolygons}
+        selectedCustomPoi={selectedCustomPoi}
+        selectedPolygon={selectedPolygon}
+        onSelectFeature={handleFeatureSelected}
       />
 
       <div
@@ -161,6 +184,7 @@ export default function MapPage() {
           onMarkerPlaced={handleMarkerPlaced}
           onPolygonDrawn={handlePolygonDrawn}
           onDeleteFeature={handleDeleteFeature}
+          onFeatureSelected={handleFeatureSelected}
         />
       </div>
 

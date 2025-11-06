@@ -23,6 +23,7 @@ interface MapContainerProps {
   onMarkerPlaced: (position: [number, number]) => void;
   onPolygonDrawn: (coords: [number, number][]) => void;
   onDeleteFeature: (type: "poi" | "polygon", id: string) => void;
+  onFeatureSelected: (type: "poi" | "polygon", id: string) => void;
 }
 
 export function MapContainer({
@@ -34,6 +35,7 @@ export function MapContainer({
   onMarkerPlaced,
   onPolygonDrawn,
   onDeleteFeature,
+  onFeatureSelected,
 }: MapContainerProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -213,7 +215,10 @@ export function MapContainer({
               <h3 class="font-semibold text-sm">${poi.name}</h3>
               <p class="text-xs text-muted-foreground capitalize">${poi.category}</p>
               ${poi.description ? `<p class="text-xs mt-1">${poi.description}</p>` : ""}
-              <button class="text-xs text-destructive mt-2" data-delete-poi="${poi.id}">Delete</button>
+              <div class="flex gap-2 mt-2">
+                <button class="text-xs text-primary hover:underline" data-view-poi="${poi.id}">View GeoJSON</button>
+                <button class="text-xs text-destructive hover:underline" data-delete-poi="${poi.id}">Delete</button>
+              </div>
             </div>`,
             { className: "custom-popup" }
           )
@@ -222,7 +227,14 @@ export function MapContainer({
         markersRef.current[`custom-${poi.id}`] = marker;
 
         marker.on("popupopen", () => {
+          const viewBtn = document.querySelector(`[data-view-poi="${poi.id}"]`);
           const deleteBtn = document.querySelector(`[data-delete-poi="${poi.id}"]`);
+          
+          viewBtn?.addEventListener("click", () => {
+            onFeatureSelected("poi", poi.id!);
+            marker.closePopup();
+          });
+          
           deleteBtn?.addEventListener("click", () => {
             onDeleteFeature("poi", poi.id!);
             marker.closePopup();
@@ -230,7 +242,7 @@ export function MapContainer({
         });
       });
     }
-  }, [osmPois, customPois, poiFilters, onDeleteFeature]);
+  }, [osmPois, customPois, poiFilters, onDeleteFeature, onFeatureSelected]);
 
   useEffect(() => {
     if (!mapRef.current) return;
@@ -255,7 +267,10 @@ export function MapContainer({
             <p class="text-xs text-muted-foreground capitalize">${poly.zoneType}</p>
             ${poly.notes ? `<p class="text-xs mt-1">${poly.notes}</p>` : ""}
             ${poly.area ? `<p class="text-xs mt-1">${poly.area.toFixed(2)} m²</p>` : ""}
-            <button class="text-xs text-destructive mt-2" data-delete-polygon="${poly.id}">Delete</button>
+            <div class="flex gap-2 mt-2">
+              <button class="text-xs text-primary hover:underline" data-view-polygon="${poly.id}">View GeoJSON</button>
+              <button class="text-xs text-destructive hover:underline" data-delete-polygon="${poly.id}">Delete</button>
+            </div>
           </div>`,
           { className: "custom-popup" }
         )
@@ -264,14 +279,21 @@ export function MapContainer({
       polygonsRef.current[poly.id!] = polygon;
 
       polygon.on("popupopen", () => {
+        const viewBtn = document.querySelector(`[data-view-polygon="${poly.id}"]`);
         const deleteBtn = document.querySelector(`[data-delete-polygon="${poly.id}"]`);
+        
+        viewBtn?.addEventListener("click", () => {
+          onFeatureSelected("polygon", poly.id!);
+          polygon.closePopup();
+        });
+        
         deleteBtn?.addEventListener("click", () => {
           onDeleteFeature("polygon", poly.id!);
           polygon.closePopup();
         });
       });
     });
-  }, [drawnPolygons, onDeleteFeature]);
+  }, [drawnPolygons, onDeleteFeature, onFeatureSelected]);
 
   return (
     <div className="relative w-full h-full">
