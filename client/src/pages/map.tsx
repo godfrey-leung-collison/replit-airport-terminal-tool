@@ -190,7 +190,7 @@ export default function MapPage() {
       {showCustomPoiModal && tempMarkerPosition && (
         <CustomPoiModal
           position={tempMarkerPosition}
-          airportId={selectedAirport?.iataCode || ""}
+          airportId={selectedAirport?.id || ""}
           onSave={handleAddCustomPoi}
           onClose={() => {
             setShowCustomPoiModal(false);
@@ -203,7 +203,7 @@ export default function MapPage() {
       {showPolygonModal && tempPolygonCoords && (
         <PolygonModal
           coordinates={tempPolygonCoords}
-          airportId={selectedAirport?.iataCode || ""}
+          airportId={selectedAirport?.id || ""}
           onSave={handleAddPolygon}
           onClose={() => {
             setShowPolygonModal(false);
