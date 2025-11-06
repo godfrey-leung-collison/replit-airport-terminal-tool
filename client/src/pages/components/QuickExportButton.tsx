@@ -36,7 +36,7 @@ export function QuickExportButton({
           name: poi.name,
           category: poi.category,
           description: poi.description,
-          airportId: poi.airportId,
+          airportIATA: poi.airportIataCode,
           createdAt: poi.createdAt,
         },
         geometry: {
@@ -58,7 +58,7 @@ export function QuickExportButton({
           zoneType: polygon.zoneType,
           notes: polygon.notes,
           area: polygon.area,
-          airportId: polygon.airportId,
+          airportIATA: polygon.airportIataCode,
           createdAt: polygon.createdAt,
         },
         geometry: {

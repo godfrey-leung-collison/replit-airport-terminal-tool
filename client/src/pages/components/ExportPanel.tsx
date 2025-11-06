@@ -42,7 +42,7 @@ export function ExportPanel({
             name: poi.name,
             category: poi.category,
             description: poi.description,
-            airportId: poi.airportId,
+            airportIATA: poi.airportIataCode,
           },
           geometry: {
             type: "Point",
@@ -63,7 +63,7 @@ export function ExportPanel({
             zoneType: polygon.zoneType,
             notes: polygon.notes,
             area: polygon.area,
-            airportId: polygon.airportId,
+            airportIATA: polygon.airportIataCode,
           },
           geometry: {
             type: "Polygon",

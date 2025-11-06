@@ -18,6 +18,7 @@ export const airports = pgTable("airports", {
 export const customPois = pgTable("custom_pois", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   airportId: varchar("airport_id").notNull(),
+  airportIataCode: varchar("airport_iata_code", { length: 3 }),
   name: text("name").notNull(),
   category: text("category").notNull(),
   description: text("description"),
@@ -31,6 +32,7 @@ export const customPois = pgTable("custom_pois", {
 export const drawnPolygons = pgTable("drawn_polygons", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   airportId: varchar("airport_id").notNull(),
+  airportIataCode: varchar("airport_iata_code", { length: 3 }),
   name: text("name").notNull(),
   zoneType: text("zone_type").notNull(),
   notes: text("notes"),

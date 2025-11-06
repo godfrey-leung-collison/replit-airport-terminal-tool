@@ -191,6 +191,7 @@ export default function MapPage() {
         <CustomPoiModal
           position={tempMarkerPosition}
           airportId={selectedAirport?.id || ""}
+          airportIataCode={selectedAirport?.iataCode}
           onSave={handleAddCustomPoi}
           onClose={() => {
             setShowCustomPoiModal(false);
@@ -204,6 +205,7 @@ export default function MapPage() {
         <PolygonModal
           coordinates={tempPolygonCoords}
           airportId={selectedAirport?.id || ""}
+          airportIataCode={selectedAirport?.iataCode}
           onSave={handleAddPolygon}
           onClose={() => {
             setShowPolygonModal(false);

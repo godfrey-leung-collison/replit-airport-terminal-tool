@@ -36,6 +36,7 @@ const formSchema = z.object({
 interface PolygonModalProps {
   coordinates: [number, number][];
   airportId: string;
+  airportIataCode?: string;
   onSave: (polygon: DrawnPolygon) => void;
   onClose: () => void;
 }
@@ -43,6 +44,7 @@ interface PolygonModalProps {
 export function PolygonModal({
   coordinates,
   airportId,
+  airportIataCode,
   onSave,
   onClose,
 }: PolygonModalProps) {
@@ -81,6 +83,7 @@ export function PolygonModal({
     const polygon: DrawnPolygon = {
       id: crypto.randomUUID(),
       airportId,
+      airportIataCode: airportIataCode || null,
       name: values.name,
       zoneType: values.zoneType,
       notes: values.notes || null,

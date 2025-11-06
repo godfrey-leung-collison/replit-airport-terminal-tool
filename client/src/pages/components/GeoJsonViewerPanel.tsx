@@ -36,7 +36,7 @@ export function GeoJsonViewerPanel({
         name: poi.name,
         category: poi.category,
         description: poi.description,
-        airportId: poi.airportId,
+        airportIATA: poi.airportIataCode,
         createdAt: poi.createdAt,
       },
       geometry: {
@@ -57,7 +57,7 @@ export function GeoJsonViewerPanel({
         zoneType: polygon.zoneType,
         notes: polygon.notes,
         area: polygon.area,
-        airportId: polygon.airportId,
+        airportIATA: polygon.airportIataCode,
         createdAt: polygon.createdAt,
       },
       geometry: {
