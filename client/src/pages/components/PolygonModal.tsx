@@ -131,7 +131,9 @@ export function PolygonModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="terminal">Terminal</SelectItem>
+                      <SelectItem value="non-schengen">Non-Schengen Area</SelectItem>
+                      <SelectItem value="schengen">Schengen Area</SelectItem>
+                      <SelectItem value="concourse">Concourse</SelectItem>
                       <SelectItem value="security">Security Area</SelectItem>
                       <SelectItem value="gates">Gate Area</SelectItem>
                       <SelectItem value="retail">Retail Zone</SelectItem>

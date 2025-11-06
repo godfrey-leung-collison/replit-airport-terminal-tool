@@ -112,6 +112,9 @@ export function CustomPoiModal({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
+                      <SelectItem value="lounge">Lounge</SelectItem>
+                      <SelectItem value="cafe">Cafe</SelectItem>
+                      <SelectItem value="restaurant">Restaurant</SelectItem>
                       <SelectItem value="security_checkpoint">Security Checkpoint</SelectItem>
                       <SelectItem value="gate">Gate</SelectItem>
                       <SelectItem value="restroom">Restroom</SelectItem>

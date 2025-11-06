@@ -1,5 +1,7 @@
 import type { Airport, CustomPoi, DrawnPolygon, InsertCustomPoi, InsertDrawnPolygon } from "@shared/schema";
 import { randomUUID } from "crypto";
+import { readFileSync } from "fs";
+import { join } from "path";
 
 export interface IStorage {
   getAllAirports(): Promise<Airport[]>;
@@ -24,10 +26,85 @@ export class MemStorage implements IStorage {
     this.customPois = new Map();
     this.drawnPolygons = new Map();
     
-    this.seedAirports();
+    // this.seedAirports();
+    this.seedAirportsFromCSV();
   }
 
-  private seedAirports() {
+  private seedAirportsFromCSV() {
+    try {
+      // Read the CSV file
+      const csvPath = join(process.cwd(), 'files', 'iata-icao.csv');
+      const csvContent = readFileSync(csvPath, 'utf-8');
+      
+      // Parse CSV manually (simple approach for this format)
+      const lines = csvContent.split('\n');
+      const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+      
+      // Find column indices
+      const countryCodeIdx = headers.indexOf('country_code');
+      const regionIdx = headers.indexOf('region_name');
+      const iataIdx = headers.indexOf('iata');
+      const airportIdx = headers.indexOf('airport');
+      const latIdx = headers.indexOf('latitude');
+      const lonIdx = headers.indexOf('longitude');
+      
+      // Parse each line (skip header)
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        
+        // Parse CSV line handling quoted values
+        const values = this.parseCSVLine(line);
+        if (values.length < headers.length) continue;
+        
+        const iataCode = values[iataIdx];
+        // Skip entries without IATA code
+        if (!iataCode || iataCode === '') continue;
+        
+        const airport: Airport = {
+          id: randomUUID(),
+          iataCode: iataCode,
+          name: values[airportIdx],
+          city: values[regionIdx],
+          country: values[countryCodeIdx], // Using country code; you could map to full names if needed
+          latitude: parseFloat(values[latIdx]),
+          longitude: parseFloat(values[lonIdx]),
+        };
+        
+        this.airports.set(airport.id, airport);
+      }
+      
+      console.log(`Loaded ${this.airports.size} airports from CSV`);
+    } catch (error) {
+      console.error('Error loading airports from CSV:', error);
+      // Fallback to hardcoded airports if CSV loading fails
+      this.seedAirportsHardcoded();
+    }
+  }
+  
+  private parseCSVLine(line: string): string[] {
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim());
+    
+    return values;
+  }
+
+  private seedAirportsHardcoded() {
     const sampleAirports: Airport[] = [
       {
         id: randomUUID(),
