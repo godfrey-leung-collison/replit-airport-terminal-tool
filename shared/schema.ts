@@ -78,6 +78,17 @@ export const osmPoiSchema = z.object({
 
 export type OsmPoi = z.infer<typeof osmPoiSchema>;
 
+// OpenStreetMap Terminal Polygon from Overpass API
+export const osmTerminalPolygonSchema = z.object({
+  id: z.union([z.number(), z.string()]),
+  type: z.enum(["way", "relation"]),
+  tags: z.record(z.string(), z.string()),
+  name: z.string().optional(),
+  geometry: z.array(z.array(z.tuple([z.number(), z.number()]))), // Array of coordinate rings
+});
+
+export type OsmTerminalPolygon = z.infer<typeof osmTerminalPolygonSchema>;
+
 // GeoJSON export format
 export const featureCollectionSchema = z.object({
   type: z.literal("FeatureCollection"),

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { ChevronLeft, ChevronRight, Search, MapPin, Coffee, Utensils, Shield, Plane, Layers, FileJson, Copy, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, MapPin, Coffee, Utensils, Shield, Plane, Layers, FileJson, Copy, X, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -332,6 +332,17 @@ export function AirportSidebar({
                     checked={poiFilters.gates}
                     onCheckedChange={() => onToggleFilter("gates")}
                     data-testid="toggle-gates"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Building2 className="w-4 h-4 text-amber-500" />
+                    <span className="text-sm">Terminals</span>
+                  </div>
+                  <Switch
+                    checked={poiFilters.terminals}
+                    onCheckedChange={() => onToggleFilter("terminals")}
+                    data-testid="toggle-terminals"
                   />
                 </div>
                 <div className="flex items-center justify-between">

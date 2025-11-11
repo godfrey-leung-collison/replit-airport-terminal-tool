@@ -4,7 +4,7 @@ import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-draw";
 import { useQuery } from "@tanstack/react-query";
-import type { Airport, CustomPoi, DrawnPolygon, OsmPoi } from "@shared/schema";
+import type { Airport, CustomPoi, DrawnPolygon, OsmPoi, OsmTerminalPolygon } from "@shared/schema";
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -46,9 +46,15 @@ export function MapContainer({
 
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const polygonsRef = useRef<{ [key: string]: L.Polygon }>({});
+  const terminalPolygonsRef = useRef<{ [key: string]: L.Polygon }>({});
 
   const { data: osmPois = [], isLoading: poisLoading } = useQuery<OsmPoi[]>({
     queryKey: selectedAirport ? [`/api/pois/${selectedAirport.id}`] : [],
+    enabled: !!selectedAirport,
+  });
+
+  const { data: terminals = [], isLoading: terminalsLoading } = useQuery<OsmTerminalPolygon[]>({
+    queryKey: selectedAirport ? [`/api/terminals/${selectedAirport.id}`] : [],
     enabled: !!selectedAirport,
   });
 
@@ -295,13 +301,97 @@ export function MapContainer({
     });
   }, [drawnPolygons, onDeleteFeature, onFeatureSelected]);
 
+  // Render terminal polygons from OpenStreetMap
+  useEffect(() => {
+    if (!mapRef.current) return;
+
+    const map = mapRef.current;
+
+    // Remove existing terminal polygons
+    Object.values(terminalPolygonsRef.current).forEach(polygon => map.removeLayer(polygon));
+    terminalPolygonsRef.current = {};
+
+    // Add new terminal polygons only if the filter is enabled
+    if (poiFilters.terminals) {
+      // Color palette for terminals - distinct, vibrant colors
+      const terminalColors = [
+        "#fbbf24", // Amber
+        "#3b82f6", // Blue
+        "#10b981", // Green
+        "#8b5cf6", // Purple
+        "#ef4444", // Red
+        "#f97316", // Orange
+        "#06b6d4", // Cyan
+        "#ec4899", // Pink
+        "#84cc16", // Lime
+        "#6366f1", // Indigo
+      ];
+
+      terminals.forEach((terminal, terminalIndex) => {
+        if (!terminal.geometry || terminal.geometry.length === 0) return;
+
+        // Assign color based on terminal index
+        const color = terminalColors[terminalIndex % terminalColors.length];
+
+        terminal.geometry.forEach((ring, ringIndex) => {
+          if (ring.length < 3) return;
+
+          const polygon = L.polygon(ring, {
+            color: color,
+            fillColor: color,
+            fillOpacity: 0.15,
+            weight: 2,
+          })
+            .bindTooltip(terminal.name || "Terminal", {
+              permanent: false,
+              direction: "center",
+              className: "terminal-tooltip",
+            })
+            .bindPopup(
+              `<div class="p-2">
+                <h3 class="font-semibold text-sm">${terminal.name || "Terminal"}</h3>
+                <p class="text-xs text-muted-foreground">Airport Terminal Building</p>
+                ${terminal.tags.ref ? `<p class="text-xs mt-1">Ref: ${terminal.tags.ref}</p>` : ""}
+                <div class="mt-2 flex items-center gap-2">
+                  <div style="width: 16px; height: 16px; background-color: ${color}; border-radius: 2px; border: 1px solid rgba(0,0,0,0.2);"></div>
+                  <span class="text-xs text-muted-foreground">Terminal ${terminalIndex + 1}</span>
+                </div>
+              </div>`,
+              { className: "custom-popup" }
+            )
+            .addTo(map);
+
+          // Add hover effect
+          polygon.on("mouseover", function(this: L.Polygon) {
+            this.setStyle({
+              fillOpacity: 0.3,
+              weight: 3,
+            });
+          });
+
+          polygon.on("mouseout", function(this: L.Polygon) {
+            this.setStyle({
+              fillOpacity: 0.15,
+              weight: 2,
+            });
+          });
+
+          terminalPolygonsRef.current[`${terminal.id}-${ringIndex}`] = polygon;
+        });
+      });
+    }
+  }, [terminals, poiFilters.terminals]);
+
   return (
     <div className="relative w-full h-full">
       <div ref={mapContainerRef} className="w-full h-full" />
       
-      {poisLoading && selectedAirport && (
+      {(poisLoading || terminalsLoading) && selectedAirport && (
         <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-card border border-card-border px-4 py-2 rounded-md shadow-md z-[1000]">
-          <p className="text-sm font-medium text-muted-foreground">Loading POIs...</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            {poisLoading && terminalsLoading ? "Loading POIs and terminals..." : 
+             poisLoading ? "Loading POIs..." : "Loading terminals..."}
+          </p>
         </div>
       )}
       

@@ -26,6 +26,7 @@ export default function MapPage() {
     security: false,
     gates: false,
     customPois: true,
+    terminals: true,
   });
 
   const [showCustomPoiModal, setShowCustomPoiModal] = useState(false);
