@@ -1,0 +1,14 @@
+{
+    "環亞機場貴賓室 Plaza Premium Lounge": {
+        "LOUNGE_CODE": "HKG10",
+        "is_AD": false
+    },
+    "Chase Sapphire Lounge": {
+        "LOUNGE_CODE": "HKG13",
+        "is_AD": true
+    },
+    "Kyra Lounge": {
+        "LOUNGE_CODE": "HKG18",
+        "is_AD": true
+    }
+}

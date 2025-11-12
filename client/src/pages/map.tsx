@@ -1,15 +1,25 @@
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { MapContainer } from "@/pages/components/MapContainer";
 import { AirportSidebar } from "@/pages/components/AirportSidebar";
 import { DrawingToolsPanel } from "@/pages/components/DrawingToolsPanel";
+import { TimelapseControl } from "@/pages/components/TimelapseControl";
 // import { ExportPanel } from "@/pages/components/ExportPanel";
 import { CustomPoiModal } from "@/pages/components/CustomPoiModal";
 import { PolygonModal } from "@/pages/components/PolygonModal";
 import { GeoJsonViewerPanel } from "@/pages/components/GeoJsonViewerPanel";
 import { QuickExportButton } from "@/pages/components/QuickExportButton";
 import type { Airport, CustomPoi, DrawnPolygon } from "@shared/schema";
+import {
+  parseVisitData,
+  parseLoungeMapping,
+  getVisitDataForHour,
+  getDateRange,
+  findLoungeCodeByName,
+  type LoungeVisitData,
+  type LoungeMapping,
+} from "@/lib/timelapseUtils";
 
 export default function MapPage() {
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
@@ -38,6 +48,15 @@ export default function MapPage() {
   const [selectedCustomPoi, setSelectedCustomPoi] = useState<CustomPoi | null>(null);
   const [selectedPolygon, setSelectedPolygon] = useState<DrawnPolygon | null>(null);
 
+  // Timelapse state
+  const [visitDataLoaded, setVisitDataLoaded] = useState(false);
+  const [allVisitData, setAllVisitData] = useState<LoungeVisitData[]>([]);
+  const [loungeMappings, setLoungeMappings] = useState<LoungeMapping[]>([]);
+  const [currentDateTime, setCurrentDateTime] = useState<Date>(new Date("2023-12-31T00:00:00"));
+  const [minDateTime, setMinDateTime] = useState<Date>(new Date("2023-12-31T00:00:00"));
+  const [maxDateTime, setMaxDateTime] = useState<Date>(new Date("2024-12-31T23:00:00"));
+  const [isPlaying, setIsPlaying] = useState(false);
+
   const { data: customPois = [] } = useQuery<CustomPoi[]>({
     queryKey: selectedAirport ? [`/api/custom-pois/${selectedAirport.id}`] : [],
     enabled: !!selectedAirport,
@@ -47,6 +66,89 @@ export default function MapPage() {
     queryKey: selectedAirport ? [`/api/polygons/${selectedAirport.id}`] : [],
     enabled: !!selectedAirport,
   });
+
+  // Load visit data for HKG airport
+  useEffect(() => {
+    if (selectedAirport?.iataCode === "HKG" && !visitDataLoaded) {
+      const loadVisitData = async () => {
+        try {
+          // Load CSV data
+          const csvResponse = await fetch("/files/samples/HKG_visits_hourly_visit.csv");
+          const csvText = await csvResponse.text();
+          const parsedData = parseVisitData(csvText);
+          
+          // Load lounge mapping
+          const jsonResponse = await fetch("/files/samples/mapped_HKG_lounges.json");
+          const mappingJson = await jsonResponse.json();
+          const mappings = parseLoungeMapping(mappingJson);
+          
+          // Get date range
+          const dateRange = getDateRange(parsedData);
+          
+          if (dateRange) {
+            setMinDateTime(dateRange.min);
+            setMaxDateTime(dateRange.max);
+            setCurrentDateTime(dateRange.min);
+          }
+          
+          setAllVisitData(parsedData);
+          setLoungeMappings(mappings);
+          setVisitDataLoaded(true);
+        } catch (error) {
+          console.error("Failed to load visit data:", error);
+        }
+      };
+      
+      loadVisitData();
+    } else if (selectedAirport?.iataCode !== "HKG") {
+      // Reset timelapse data when switching away from HKG
+      setVisitDataLoaded(false);
+      setAllVisitData([]);
+      setLoungeMappings([]);
+      setIsPlaying(false);
+    }
+  }, [selectedAirport, visitDataLoaded]);
+
+  // Auto-play functionality
+  useEffect(() => {
+    if (!isPlaying) return;
+
+    const interval = setInterval(() => {
+      setCurrentDateTime((prev) => {
+        const nextTime = new Date(prev.getTime() + 60 * 60 * 1000); // +1 hour
+        if (nextTime > maxDateTime) {
+          setIsPlaying(false);
+          return maxDateTime;
+        }
+        return nextTime;
+      });
+    }, 1000); // Advance every 1 second
+
+    return () => clearInterval(interval);
+  }, [isPlaying, maxDateTime]);
+
+  // Compute visit data for current hour and lounge code map
+  const { currentVisitData, maxVisits, loungeCodeMap } = useMemo(() => {
+    if (allVisitData.length === 0 || loungeMappings.length === 0) {
+      return { currentVisitData: new Map(), maxVisits: 0, loungeCodeMap: new Map() };
+    }
+
+    const visitMap = getVisitDataForHour(allVisitData, currentDateTime);
+    
+    // Calculate max visits for scaling
+    let max = 0;
+    visitMap.forEach((visits) => {
+      if (visits > max) max = visits;
+    });
+
+    // Create map from lounge name to lounge code for quick lookups
+    const codeMap = new Map<string, string>();
+    loungeMappings.forEach((mapping) => {
+      codeMap.set(mapping.loungeName, mapping.loungeCode);
+    });
+
+    return { currentVisitData: visitMap, maxVisits: max, loungeCodeMap: codeMap };
+  }, [allVisitData, loungeMappings, currentDateTime]);
 
   const createPoiMutation = useMutation({
     mutationFn: async (poi: Omit<CustomPoi, "id" | "createdAt">) => {
@@ -189,7 +291,22 @@ export default function MapPage() {
           onPolygonDrawn={handlePolygonDrawn}
           onDeleteFeature={handleDeleteFeature}
           onFeatureSelected={handleFeatureSelected}
+          visitData={currentVisitData}
+          maxVisits={maxVisits}
+          loungeCodeMap={loungeCodeMap}
         />
+
+        {/* Timelapse Control - only show for HKG airport with loaded data */}
+        {selectedAirport?.iataCode === "HKG" && visitDataLoaded && (
+          <TimelapseControl
+            currentDateTime={currentDateTime}
+            minDateTime={minDateTime}
+            maxDateTime={maxDateTime}
+            onDateTimeChange={setCurrentDateTime}
+            isPlaying={isPlaying}
+            onPlayPause={() => setIsPlaying(!isPlaying)}
+          />
+        )}
       </div>
 
       <DrawingToolsPanel

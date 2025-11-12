@@ -5,6 +5,7 @@ import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-draw";
 import { useQuery } from "@tanstack/react-query";
 import type { Airport, CustomPoi, DrawnPolygon, OsmPoi, OsmTerminalPolygon } from "@shared/schema";
+import { getVisitColorIntensity } from "@/lib/timelapseUtils";
 
 // Fix Leaflet default icon issue
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -24,6 +25,9 @@ interface MapContainerProps {
   onPolygonDrawn: (coords: [number, number][]) => void;
   onDeleteFeature: (type: "poi" | "polygon", id: string) => void;
   onFeatureSelected: (type: "poi" | "polygon", id: string) => void;
+  visitData?: Map<string, number>;
+  maxVisits?: number;
+  loungeCodeMap?: Map<string, string>; // Map from lounge name to lounge code
 }
 
 export function MapContainer({
@@ -36,6 +40,9 @@ export function MapContainer({
   onPolygonDrawn,
   onDeleteFeature,
   onFeatureSelected,
+  visitData,
+  maxVisits = 100,
+  loungeCodeMap,
 }: MapContainerProps) {
   const mapRef = useRef<L.Map | null>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -172,12 +179,55 @@ export function MapContainer({
     Object.values(markersRef.current).forEach(marker => map.removeLayer(marker));
     markersRef.current = {};
 
-    const createIcon = (category: string, color: string) => {
+    const createIcon = (category: string, color: string, visits?: number) => {
+      const size = 24;
+      const barMaxHeight = 40;
+      const barWidth = 8;
+      const gap = 6;
+      const textHeight = 14;
+      
+      // Always use consistent container size to prevent position shifting
+      const containerHeight = Math.max(size, textHeight + barMaxHeight);
+      const circleTopOffset = (containerHeight - size) / 2;
+      
+      // Simple marker without visit data
+      if (visits === undefined || visits === null) {
+        const markerHtml = `
+          <div style="position: relative; width: ${size}px; height: ${containerHeight}px;">
+            <div style="position: absolute; left: 0; top: ${circleTopOffset}px; background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>
+          </div>
+        `;
+        
+        return L.divIcon({
+          className: "custom-poi-marker",
+          html: markerHtml,
+          iconSize: [size, containerHeight],
+          iconAnchor: [size / 2, containerHeight / 2],
+        });
+      }
+      
+      // Calculate bar chart properties
+      const { color: barColor, barHeight } = getVisitColorIntensity(visits, maxVisits);
+      const actualBarHeight = (barHeight / 100) * barMaxHeight;
+      
+      // Marker with visit bar chart
+      const markerHtml = `
+        <div style="position: relative; width: ${size + gap + barWidth}px; height: ${containerHeight}px;">
+          <div style="position: absolute; left: 0; top: ${circleTopOffset}px; background-color: ${color}; width: ${size}px; height: ${size}px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>
+          <div style="position: absolute; left: ${size + gap}px; bottom: 0; display: flex; flex-direction: column; align-items: center; gap: 2px;">
+            <div style="font-size: 10px; font-weight: bold; color: #1f2937; background: white; padding: 1px 4px; border-radius: 3px; box-shadow: 0 1px 3px rgba(0,0,0,0.2); white-space: nowrap;">${visits}</div>
+            <div style="width: ${barWidth}px; height: ${barMaxHeight}px; background: #e5e7eb; border-radius: 2px; position: relative; box-shadow: 0 1px 3px rgba(0,0,0,0.2);">
+              <div style="width: 100%; height: ${actualBarHeight}px; background: ${barColor}; border-radius: 2px; position: absolute; bottom: 0;"></div>
+            </div>
+          </div>
+        </div>
+      `;
+
       return L.divIcon({
         className: "custom-poi-marker",
-        html: `<div style="background-color: ${color}; width: 24px; height: 24px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
+        html: markerHtml,
+        iconSize: [size + gap + barWidth, containerHeight],
+        iconAnchor: [size / 2, containerHeight / 2],
       });
     };
 
@@ -196,13 +246,24 @@ export function MapContainer({
           poi.type === "security" ? "#3b82f6" :
           "#10b981";
 
+        // Check if this is a lounge and we have visit data
+        let visits: number | undefined;
+        if (poi.type === "lounge" && visitData && loungeCodeMap) {
+          // Try to find lounge code from name
+          const loungeCode = loungeCodeMap.get(poi.name || "");
+          if (loungeCode) {
+            visits = visitData.get(loungeCode);
+          }
+        }
+
         const marker = L.marker([poi.lat, poi.lon], {
-          icon: createIcon(poi.type, color),
+          icon: createIcon(poi.type, color, visits),
         })
           .bindPopup(
             `<div class="p-2">
               <h3 class="font-semibold text-sm">${poi.name || "Unnamed"}</h3>
               <p class="text-xs text-muted-foreground capitalize">${poi.type}</p>
+              ${visits !== undefined ? `<p class="text-xs mt-1 font-medium text-primary">Visits: ${visits}</p>` : ""}
             </div>`
           )
           .addTo(map);
@@ -213,14 +274,26 @@ export function MapContainer({
 
     if (poiFilters.customPois) {
       customPois.forEach((poi) => {
+        // Check if this is a lounge and we have visit data
+        let visits: number | undefined;
+        if (poi.category === "lounge" && visitData && loungeCodeMap) {
+          const loungeCode = loungeCodeMap.get(poi.name);
+          if (loungeCode) {
+            visits = visitData.get(loungeCode);
+          }
+        }
+
+        const color = poi.category === "lounge" ? "#9333ea" : "hsl(210, 70%, 45%)";
+
         const marker = L.marker([poi.latitude, poi.longitude], {
-          icon: createIcon("custom", "hsl(210, 70%, 45%)"),
+          icon: createIcon("custom", color, visits),
         })
           .bindPopup(
             `<div class="p-2">
               <h3 class="font-semibold text-sm">${poi.name}</h3>
               <p class="text-xs text-muted-foreground capitalize">${poi.category}</p>
               ${poi.description ? `<p class="text-xs mt-1">${poi.description}</p>` : ""}
+              ${visits !== undefined ? `<p class="text-xs mt-1 font-medium text-primary">Visits: ${visits}</p>` : ""}
               <div class="flex gap-2 mt-2">
                 <button class="text-xs text-primary hover:underline" data-view-poi="${poi.id}">View GeoJSON</button>
                 <button class="text-xs text-destructive hover:underline" data-delete-poi="${poi.id}">Delete</button>
@@ -248,7 +321,7 @@ export function MapContainer({
         });
       });
     }
-  }, [osmPois, customPois, poiFilters, onDeleteFeature, onFeatureSelected]);
+  }, [osmPois, customPois, poiFilters, onDeleteFeature, onFeatureSelected, visitData, maxVisits, loungeCodeMap]);
 
   useEffect(() => {
     if (!mapRef.current) return;
