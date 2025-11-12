@@ -31,8 +31,8 @@ export default function MapPage() {
   
   const [poiFilters, setPoiFilters] = useState({
     lounges: true,
-    cafes: true,
-    restaurants: true,
+    cafes: false,
+    restaurants: false,
     security: false,
     gates: false,
     customPois: true,
