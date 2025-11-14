@@ -4,6 +4,7 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { MapContainer } from "@/pages/components/MapContainer";
 import { AirportSidebar } from "@/pages/components/AirportSidebar";
 import { DrawingToolsPanel } from "@/pages/components/DrawingToolsPanel";
+import { HeatmapPanel } from "@/pages/components/HeatmapPanel";
 // import { ExportPanel } from "@/pages/components/ExportPanel";
 import { CustomPoiModal } from "@/pages/components/CustomPoiModal";
 import { PolygonModal } from "@/pages/components/PolygonModal";
@@ -37,6 +38,10 @@ export default function MapPage() {
   // Feature selection for GeoJSON viewer
   const [selectedCustomPoi, setSelectedCustomPoi] = useState<CustomPoi | null>(null);
   const [selectedPolygon, setSelectedPolygon] = useState<DrawnPolygon | null>(null);
+
+  // Heatmap state
+  const [showHeatmap, setShowHeatmap] = useState(false);
+  const [heatmapData, setHeatmapData] = useState<Map<string, number>>(new Map());
 
   const { data: customPois = [] } = useQuery<CustomPoi[]>({
     queryKey: selectedAirport ? [`/api/custom-pois/${selectedAirport.id}`] : [],
@@ -185,6 +190,8 @@ export default function MapPage() {
           poiFilters={poiFilters}
           customPois={customPois}
           drawnPolygons={drawnPolygons}
+          heatmapData={heatmapData}
+          showHeatmap={showHeatmap}
           onMarkerPlaced={handleMarkerPlaced}
           onPolygonDrawn={handlePolygonDrawn}
           onDeleteFeature={handleDeleteFeature}
@@ -196,6 +203,14 @@ export default function MapPage() {
         activeTool={activeDrawingTool}
         onSelectTool={setActiveDrawingTool}
         onClearAll={handleClearAll}
+        showHeatmap={showHeatmap}
+        onToggleHeatmap={() => setShowHeatmap(!showHeatmap)}
+        canShowHeatmap={selectedAirport?.iataCode === "HKG"}
+      />
+
+      <HeatmapPanel
+        isOpen={showHeatmap}
+        onHeatmapDataChange={setHeatmapData}
       />
 
       {/* <ExportPanel

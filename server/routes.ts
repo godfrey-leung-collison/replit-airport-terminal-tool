@@ -281,6 +281,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/heatmap/hkg", async (_req, res) => {
+    try {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const dataPath = path.join(process.cwd(), "files/samples/HKG_heatmap_data.json");
+      const data = await fs.readFile(dataPath, "utf-8");
+      res.json(JSON.parse(data));
+    } catch (error) {
+      console.error("Error loading heatmap data:", error);
+      res.status(500).json({ error: "Failed to load heatmap data" });
+    }
+  });
+
+  app.get("/api/heatmap/hkg/gate-areas", async (_req, res) => {
+    try {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const dataPath = path.join(process.cwd(), "files/samples/HKG_gate_areas_coordinates.json");
+      const data = await fs.readFile(dataPath, "utf-8");
+      res.json(JSON.parse(data));
+    } catch (error) {
+      console.error("Error loading gate areas:", error);
+      res.status(500).json({ error: "Failed to load gate areas" });
+    }
+  });
+
+  app.get("/api/heatmap/hkg/gate-coordinates", async (_req, res) => {
+    try {
+      const fs = await import("fs/promises");
+      const path = await import("path");
+      const dataPath = path.join(process.cwd(), "files/samples/HKG_gate_coordinates.json");
+      const data = await fs.readFile(dataPath, "utf-8");
+      res.json(JSON.parse(data));
+    } catch (error) {
+      console.error("Error loading gate coordinates:", error);
+      res.status(500).json({ error: "Failed to load gate coordinates" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;

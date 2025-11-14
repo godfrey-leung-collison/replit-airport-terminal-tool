@@ -3,6 +3,7 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import "leaflet-draw/dist/leaflet.draw.css";
 import "leaflet-draw";
+import "leaflet.heat";
 import { useQuery } from "@tanstack/react-query";
 import type { Airport, CustomPoi, DrawnPolygon, OsmPoi, OsmTerminalPolygon } from "@shared/schema";
 
@@ -14,12 +15,18 @@ L.Icon.Default.mergeOptions({
   shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.7.1/images/marker-shadow.png",
 });
 
+interface GateCoordinates {
+  [gateNumber: string]: [number, number]; // [lat, lon]
+}
+
 interface MapContainerProps {
   selectedAirport: Airport | null;
   activeDrawingTool: "marker" | "polygon" | "edit" | "delete" | null;
   poiFilters: Record<string, boolean>;
   customPois: CustomPoi[];
   drawnPolygons: DrawnPolygon[];
+  heatmapData: Map<string, number>;
+  showHeatmap: boolean;
   onMarkerPlaced: (position: [number, number]) => void;
   onPolygonDrawn: (coords: [number, number][]) => void;
   onDeleteFeature: (type: "poi" | "polygon", id: string) => void;
@@ -32,6 +39,8 @@ export function MapContainer({
   poiFilters,
   customPois,
   drawnPolygons,
+  heatmapData,
+  showHeatmap,
   onMarkerPlaced,
   onPolygonDrawn,
   onDeleteFeature,
@@ -47,6 +56,7 @@ export function MapContainer({
   const markersRef = useRef<{ [key: string]: L.Marker }>({});
   const polygonsRef = useRef<{ [key: string]: L.Polygon }>({});
   const terminalPolygonsRef = useRef<{ [key: string]: L.Polygon }>({});
+  const heatmapLayerRef = useRef<any>(null); // Heat layer reference
 
   const { data: osmPois = [], isLoading: poisLoading } = useQuery<OsmPoi[]>({
     queryKey: selectedAirport ? [`/api/pois/${selectedAirport.id}`] : [],
@@ -56,6 +66,11 @@ export function MapContainer({
   const { data: terminals = [], isLoading: terminalsLoading } = useQuery<OsmTerminalPolygon[]>({
     queryKey: selectedAirport ? [`/api/terminals/${selectedAirport.id}`] : [],
     enabled: !!selectedAirport,
+  });
+
+  const { data: gateCoordinates } = useQuery<GateCoordinates>({
+    queryKey: ["/api/heatmap/hkg/gate-coordinates"],
+    enabled: showHeatmap && selectedAirport?.iataCode === "HKG",
   });
 
   useEffect(() => {
@@ -311,8 +326,8 @@ export function MapContainer({
     Object.values(terminalPolygonsRef.current).forEach(polygon => map.removeLayer(polygon));
     terminalPolygonsRef.current = {};
 
-    // Add new terminal polygons only if the filter is enabled
-    if (poiFilters.terminals) {
+    // Add new terminal polygons only if the filter is enabled and heatmap is not shown
+    if (poiFilters.terminals && !showHeatmap) {
       // Color palette for terminals - distinct, vibrant colors
       const terminalColors = [
         "#fbbf24", // Amber
@@ -380,7 +395,65 @@ export function MapContainer({
         });
       });
     }
-  }, [terminals, poiFilters.terminals]);
+  }, [terminals, poiFilters.terminals, showHeatmap]);
+
+  // Render gradient heatmap
+  useEffect(() => {
+    if (!mapRef.current || !showHeatmap || !gateCoordinates) {
+      // Remove existing heatmap layer if heatmap is disabled
+      if (heatmapLayerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(heatmapLayerRef.current);
+        heatmapLayerRef.current = null;
+      }
+      return;
+    }
+
+    const map = mapRef.current;
+
+    // Remove existing heatmap layer
+    if (heatmapLayerRef.current) {
+      map.removeLayer(heatmapLayerRef.current);
+      heatmapLayerRef.current = null;
+    }
+
+    // Calculate max seats for intensity scaling
+    const maxSeats = Math.max(...Array.from(heatmapData.values()), 1);
+
+    // Create heat points array: [lat, lon, intensity]
+    const heatPoints: [number, number, number][] = [];
+    
+    Object.entries(gateCoordinates).forEach(([gateNumber, coords]) => {
+      const seats = heatmapData.get(`Gate ${gateNumber}`) || 
+                    heatmapData.get(gateNumber) || 
+                    heatmapData.get(parseInt(gateNumber).toString()) || 0;
+      
+      if (seats > 0 && coords && coords.length === 2) {
+        // Normalize intensity to 0-1 range
+        const intensity = maxSeats > 0 ? seats / maxSeats : 0;
+        heatPoints.push([coords[0], coords[1], intensity]);
+      }
+    });
+
+    // Create heat layer with gradient configuration
+    if (heatPoints.length > 0) {
+      const heatLayer = (L as any).heatLayer(heatPoints, {
+        radius: 40, // Size of heat radius
+        blur: 35, // Amount of blur
+        maxZoom: 18,
+        max: 1.0, // Maximum intensity
+        gradient: {
+          0.0: '#3b82f6',  // Blue (cold/low)
+          0.2: '#06b6d4',  // Cyan
+          0.4: '#10b981',  // Green
+          0.6: '#fbbf24',  // Yellow
+          0.8: '#f97316',  // Orange
+          1.0: '#ef4444'   // Red (hot/high)
+        }
+      }).addTo(map);
+
+      heatmapLayerRef.current = heatLayer;
+    }
+  }, [gateCoordinates, heatmapData, showHeatmap]);
 
   return (
     <div className="relative w-full h-full">
@@ -401,6 +474,30 @@ export function MapContainer({
             {isDrawingMarker && "Click on the map to place a marker"}
             {isDrawingPolygon && `Drawing Polygon - Click to add points (${polygonPointsRef.current.length} points), double-click to complete`}
           </p>
+        </div>
+      )}
+
+      {/* Heatmap Legend with Gradient */}
+      {showHeatmap && (
+        <div className="absolute bottom-4 right-4 bg-card border border-card-border px-4 py-3 rounded-md shadow-lg z-[1000]">
+          <h3 className="text-sm font-semibold mb-2">Departure Seats</h3>
+          <div className="space-y-2">
+            {/* Gradient bar */}
+            <div className="relative w-24 h-32 rounded"
+              style={{
+                background: 'linear-gradient(to top, #3b82f6, #06b6d4, #10b981, #fbbf24, #f97316, #ef4444)'
+              }}>
+            </div>
+            {/* Labels */}
+            <div className="flex flex-col justify-between h-32 -mt-32 ml-28">
+              <span className="text-xs font-medium">High</span>
+              <span className="text-xs">Medium</span>
+              <span className="text-xs">Low</span>
+            </div>
+          </div>
+          <div className="text-xs text-muted-foreground mt-2">
+            Intensity shows departure seats per gate
+          </div>
         </div>
       )}
     </div>

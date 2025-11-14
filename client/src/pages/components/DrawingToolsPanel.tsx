@@ -1,4 +1,4 @@
-import { MapPin, Pentagon, Edit3, Trash2, X } from "lucide-react";
+import { MapPin, Pentagon, Edit3, Trash2, X, Flame } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import {
@@ -11,12 +11,18 @@ interface DrawingToolsPanelProps {
   activeTool: "marker" | "polygon" | "edit" | "delete" | null;
   onSelectTool: (tool: "marker" | "polygon" | "edit" | "delete" | null) => void;
   onClearAll: () => void;
+  showHeatmap?: boolean;
+  onToggleHeatmap?: () => void;
+  canShowHeatmap?: boolean;
 }
 
 export function DrawingToolsPanel({
   activeTool,
   onSelectTool,
   onClearAll,
+  showHeatmap,
+  onToggleHeatmap,
+  canShowHeatmap,
 }: DrawingToolsPanelProps) {
   return (
     <Card className="fixed top-4 right-4 z-[1000] p-2">
@@ -54,6 +60,28 @@ export function DrawingToolsPanel({
         </Tooltip>
 
         <div className="h-px bg-border my-1" />
+
+        {canShowHeatmap && onToggleHeatmap && (
+          <>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  size="icon"
+                  variant={showHeatmap ? "default" : "ghost"}
+                  onClick={onToggleHeatmap}
+                  data-testid="button-toggle-heatmap"
+                >
+                  <Flame className="w-4 h-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="left">
+                <p>Terminal Heatmap (HKG)</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <div className="h-px bg-border my-1" />
+          </>
+        )}
 
         <Tooltip>
           <TooltipTrigger asChild>
