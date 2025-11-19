@@ -5,12 +5,24 @@ An interactive web application for visualizing and editing points of interest (P
 
 ![plot](./files/screenshots/add_custom_poi.gif)
 
+
 ## Purpose
 This application allows users to:
 - Search and navigate to airports by IATA code or name
 - View existing POIs (lounges, cafes, restaurants, security checkpoints, gates) from OpenStreetMap
 - Add custom POI markers and draw polygon areas to define terminal zones
 - Export all data as GeoJSON for external use
+
+
+## Additional visualisation functionality
+
+Terminal gate heatmp based on scheduled flight seat volumes by the scheduled departure gate (from OAG)
+
+![plot](./files/screenshots/terminal_gate_heatmap.gif)
+
+For further info, see confluence page
+https://lifestyle-x-wiki.atlassian.net/wiki/x/AoDGYQ
+
 
 ## How to run the app locally
 
