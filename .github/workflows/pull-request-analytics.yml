@@ -11,8 +11,8 @@ jobs:
     name: "Create report"
     runs-on: ubuntu-latest
     steps:
-      - name: "Run script for analytics"
-        uses: AlexSim93/pull-request-analytics-action@v4
+      - name: "Run Pull Request Analytics"
+        uses: AlexSim93/pull-request-analytics-action@v4.10.0
         with:
           GITHUB_TOKEN: ${{ secrets.GH_TOKEN }} # In the case of a personal access token, it needs to be added to the repository's secrets and used in this field.
           GITHUB_REPO_FOR_ISSUE: "MLP-Finance-Forecast-ROV" # Make sure to specify the name of the repository where the issue will be created
