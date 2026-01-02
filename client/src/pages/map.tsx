@@ -4,14 +4,17 @@ import { queryClient, apiRequest } from "@/lib/queryClient";
 import { MapContainer } from "@/pages/components/MapContainer";
 import { AirportSidebar } from "@/pages/components/AirportSidebar";
 import { DrawingToolsPanel } from "@/pages/components/DrawingToolsPanel";
-import { ExportPanel } from "@/pages/components/ExportPanel";
+// import { ExportPanel } from "@/pages/components/ExportPanel";
 import { CustomPoiModal } from "@/pages/components/CustomPoiModal";
 import { PolygonModal } from "@/pages/components/PolygonModal";
+import { GeoJsonViewerPanel } from "@/pages/components/GeoJsonViewerPanel";
+import { QuickExportButton } from "@/pages/components/QuickExportButton";
 import type { Airport, CustomPoi, DrawnPolygon } from "@shared/schema";
 
 export default function MapPage() {
   const [selectedAirport, setSelectedAirport] = useState<Airport | null>(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(360);
   const [activeDrawingTool, setActiveDrawingTool] = useState<
     null | "marker" | "polygon" | "edit" | "delete"
   >(null);
@@ -23,12 +26,17 @@ export default function MapPage() {
     security: false,
     gates: false,
     customPois: true,
+    terminals: true,
   });
 
   const [showCustomPoiModal, setShowCustomPoiModal] = useState(false);
   const [showPolygonModal, setShowPolygonModal] = useState(false);
   const [tempMarkerPosition, setTempMarkerPosition] = useState<[number, number] | null>(null);
   const [tempPolygonCoords, setTempPolygonCoords] = useState<[number, number][] | null>(null);
+  
+  // Feature selection for GeoJSON viewer
+  const [selectedCustomPoi, setSelectedCustomPoi] = useState<CustomPoi | null>(null);
+  const [selectedPolygon, setSelectedPolygon] = useState<DrawnPolygon | null>(null);
 
   const { data: customPois = [] } = useQuery<CustomPoi[]>({
     queryKey: selectedAirport ? [`/api/custom-pois/${selectedAirport.id}`] : [],
@@ -125,6 +133,20 @@ export default function MapPage() {
         if (polygon.id) deletePolygonMutation.mutate(polygon.id);
       }
       setActiveDrawingTool(null);
+      setSelectedCustomPoi(null);
+      setSelectedPolygon(null);
+    }
+  };
+
+  const handleFeatureSelected = (type: "poi" | "polygon", id: string) => {
+    if (type === "poi") {
+      const poi = customPois.find(p => p.id === id);
+      setSelectedCustomPoi(poi || null);
+      setSelectedPolygon(null);
+    } else {
+      const polygon = drawnPolygons.find(p => p.id === id);
+      setSelectedPolygon(polygon || null);
+      setSelectedCustomPoi(null);
     }
   };
 
@@ -133,6 +155,8 @@ export default function MapPage() {
       <AirportSidebar
         collapsed={sidebarCollapsed}
         onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
+        width={sidebarWidth}
+        onWidthChange={setSidebarWidth}
         selectedAirport={selectedAirport}
         onSelectAirport={setSelectedAirport}
         poiFilters={poiFilters}
@@ -141,12 +165,17 @@ export default function MapPage() {
         }
         customPoisCount={customPois.length}
         polygonsCount={drawnPolygons.length}
+        customPois={customPois}
+        drawnPolygons={drawnPolygons}
+        selectedCustomPoi={selectedCustomPoi}
+        selectedPolygon={selectedPolygon}
+        onSelectFeature={handleFeatureSelected}
       />
 
       <div
         className="absolute inset-0 z-0"
         style={{
-          marginLeft: sidebarCollapsed ? "48px" : "360px",
+          marginLeft: sidebarCollapsed ? "48px" : `${sidebarWidth}px`,
           transition: "margin-left 200ms ease-in-out",
         }}
       >
@@ -159,6 +188,7 @@ export default function MapPage() {
           onMarkerPlaced={handleMarkerPlaced}
           onPolygonDrawn={handlePolygonDrawn}
           onDeleteFeature={handleDeleteFeature}
+          onFeatureSelected={handleFeatureSelected}
         />
       </div>
 
@@ -168,16 +198,28 @@ export default function MapPage() {
         onClearAll={handleClearAll}
       />
 
-      <ExportPanel
+      {/* <ExportPanel
+        customPois={customPois}
+        drawnPolygons={drawnPolygons}
+        selectedAirport={selectedAirport}
+      /> */}
+
+      <QuickExportButton
         customPois={customPois}
         drawnPolygons={drawnPolygons}
         selectedAirport={selectedAirport}
       />
 
+      {/* <GeoJsonViewerPanel
+        customPois={customPois}
+        drawnPolygons={drawnPolygons}
+      /> */}
+
       {showCustomPoiModal && tempMarkerPosition && (
         <CustomPoiModal
           position={tempMarkerPosition}
           airportId={selectedAirport?.id || ""}
+          airportIataCode={selectedAirport?.iataCode}
           onSave={handleAddCustomPoi}
           onClose={() => {
             setShowCustomPoiModal(false);
@@ -191,6 +233,7 @@ export default function MapPage() {
         <PolygonModal
           coordinates={tempPolygonCoords}
           airportId={selectedAirport?.id || ""}
+          airportIataCode={selectedAirport?.iataCode}
           onSave={handleAddPolygon}
           onClose={() => {
             setShowPolygonModal(false);

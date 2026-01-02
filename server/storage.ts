@@ -225,6 +225,7 @@ export class MemStorage implements IStorage {
       ...insertPoi,
       description: insertPoi.description ?? null,
       icon: insertPoi.icon ?? null,
+      airportIataCode: insertPoi.airportIataCode ?? null,
       id,
       createdAt: new Date(),
     };
@@ -248,6 +249,7 @@ export class MemStorage implements IStorage {
       ...insertPolygon,
       notes: insertPolygon.notes ?? null,
       area: insertPolygon.area ?? null,
+      airportIataCode: insertPolygon.airportIataCode ?? null,
       id,
       createdAt: new Date(),
     };

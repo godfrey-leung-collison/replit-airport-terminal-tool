@@ -38,6 +38,7 @@ const formSchema = z.object({
 interface CustomPoiModalProps {
   position: [number, number];
   airportId: string;
+  airportIataCode?: string;
   onSave: (poi: CustomPoi) => void;
   onClose: () => void;
 }
@@ -45,6 +46,7 @@ interface CustomPoiModalProps {
 export function CustomPoiModal({
   position,
   airportId,
+  airportIataCode,
   onSave,
   onClose,
 }: CustomPoiModalProps) {
@@ -61,6 +63,7 @@ export function CustomPoiModal({
     const poi: CustomPoi = {
       id: crypto.randomUUID(),
       airportId,
+      airportIataCode: airportIataCode || null,
       name: values.name,
       category: values.category,
       description: values.description || null,

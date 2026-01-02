@@ -3,6 +3,8 @@
 ## Overview
 An interactive web application for visualizing and editing points of interest (POIs) in airport terminals worldwide. Built with React, Leaflet, and OpenStreetMap data.
 
+![plot](./files/screenshots/add_custom_poi.gif)
+
 ## Purpose
 This application allows users to:
 - Search and navigate to airports by IATA code or name
@@ -33,6 +35,11 @@ Open terminal console and run the following command to intall the required packa
 IV) Start the Development Server
 
 ```npm run dev```
+or 
+```NODE_TLS_REJECT_UNAUTHORIZED=0 npm run dev``` 
+
+> [!NOTE]
+> One may need to add `NODE_TLS_REJECT_UNAUTHORIZED=0` as well in order to bypass the certification verification step when querying the OpenStreet Map data via the API
 
 This single command starts both:
 
